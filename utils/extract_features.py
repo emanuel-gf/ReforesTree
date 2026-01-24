@@ -231,7 +231,7 @@ def split_raster(path_to_raster,
         crop = numpy_image[windows[index].indices()]
         image_path = save_crop(base_dir, image_name, index, tile_pos, crop)
 
-    return
+    return      
 
 
 def split_raster_annotations(path_to_raster,

@@ -92,8 +92,15 @@ class AGB_Reforest(NonGeoDataset):
 
         self.annot_df = pd.read_csv(os.path.join(root, 'mapping', 'final_dataset.csv'))
 
-        self.class2idx: dict[str, int] = {c: i for i, c in enumerate(self.classes)}
+        self.classes_grp = self.annot_df['group'].unique()
 
+        self.classes_name = self.annot_df['name'].unique()
+
+        self.class2idx: dict[str, int] = {c: i for i, c in enumerate(sorted(self.classes_grp))}
+
+        self.name2idx: dict[str, int] = {
+            name: idx for idx, name in enumerate(sorted(self.classes_name))
+        }
 
     def __getitem__(self, index: int) -> dict[str, Tensor]:
         """Return an index within the dataset.
@@ -108,16 +115,16 @@ class AGB_Reforest(NonGeoDataset):
 
         image = self._load_image(filepath)
 
-        boxes, labels, agb = self._load_target(filepath)
+        boxes, labels, agb, labels_name = self._load_target(filepath)
 
-        sample = {'image': image, 'bbox_xyxy': boxes, 'label': labels, 'agb': agb}
+        sample = {'image': image, 'bbox_xyxy': boxes, 'label': labels, 'agb': agb, 'label_name': labels_name}
 
         if self.transforms is not None:
             sample = self.transforms(sample)
 
         return sample
 
-
+    
     def __len__(self) -> int:
         """Return the number of data points in the dataset.
 
@@ -182,11 +189,14 @@ class AGB_Reforest(NonGeoDataset):
 
         boxes = torch.Tensor(tile_df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist())
         labels = torch.Tensor(
-            [self.class2idx[label] for label in tile_df['name'].tolist()] ## retrieves the name relative to the correct class.
+            [self.class2idx[label] for label in tile_df['group'].tolist()] ## retrieves the name relative to the correct class.
+        ).long()
+        labels_name = torch.Tensor(
+            [self.name2idx[name] for name in tile_df['name'].tolist()]
         ).long()
         agb = torch.Tensor(tile_df['AGB'].tolist())
 
-        return boxes, labels, agb
+        return boxes, labels, agb, labels_name
 
     def _verify(self) -> None:
         """Checks the integrity of the dataset structure."""
@@ -295,7 +305,7 @@ class AGB_Reforest(NonGeoDataset):
             figsize: tuple[int, int] = None,
             show_titles: bool = True,
             suptitle: str | None = None,
-            classes_name: tuple[str] = None,
+            name_or_group: str = 'name',
             color:str ='red',
             ) -> Figure:
             """Plot a sample from the dataset.
@@ -303,13 +313,27 @@ class AGB_Reforest(NonGeoDataset):
                 sample: a sample returned by :meth:`__getitem__`
                 show_titles: flag indicating whether to show titles above each panel
                 suptitle: optional string to use as a suptitle
+                classes_group: optional tuple of class names to group together
+                    See at 'self.class_grp' object of the class.
+                classes_name: list of class names corresponding to labels
+                    see at 'self.class_name'.
 
             Returns:
                 a matplotlib Figure with the rendered sample"""
 
             ## retrieve labels
-            labels = sample['label'].byte().numpy()
-            labels_name = np.array(classes_name)[labels]  ## look up class names
+            try:
+                match name_or_group:
+                    case 'name':
+                        labels_name = sample['label_name'].byte().numpy()
+                        classes_name= self.classes_name
+                        labels_name = np.array(classes_name)[labels_name]  ## look up class names
+                    case 'group':
+                        labels_name = sample['label'].byte().numpy()
+                        classes_group= self.classes_grp
+                        labels_name = np.array(classes_group)[labels_name]  ## look up group names
+            except KeyError:
+                raise ValueError("name_or_group must be either 'name' or 'group'")
 
             image = sample['image'].permute((1, 2, 0)).byte().numpy()
             has_preds = 'prediction_bbox_xyxy' in sample
@@ -325,12 +349,11 @@ class AGB_Reforest(NonGeoDataset):
             if ncols == 1:
                 axs = [axs]
 
-
+            ## if grp and names are given
             ## draw bbox and annotation label
             def draw_boxes(ax, boxes, labels_name, color):
                 count=0
                 for i, bbox in enumerate(boxes.numpy()):
-                    print(f"Box {i}: {bbox}")
                     # Draw Box
                     ax.add_patch(patches.Rectangle(
                         (bbox[0], bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],
@@ -338,8 +361,8 @@ class AGB_Reforest(NonGeoDataset):
                     ))
                     # Draw Label
                     ax.text(
-                        bbox[0], bbox[1], str(labels_name[i]),
-                        color='white', fontsize=12, fontweight='bold',
+                        bbox[0], bbox[1], f"{i}-{str(labels_name[i])}",
+                        color='white', fontsize=10, fontweight='bold',
                         bbox=dict(facecolor=color, edgecolor='none', pad=1.5)
                     )
                     count += 1
