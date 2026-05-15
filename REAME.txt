@@ -1,0 +1,8 @@
+The notebook can be find at this link in kaggle:
+
+https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor
+
+With all images properly loaded and with the output of the cells.
+
+
+Emanuel

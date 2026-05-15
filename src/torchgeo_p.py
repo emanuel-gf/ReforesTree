@@ -15,10 +15,10 @@ import torch
 from matplotlib.figure import Figure
 from PIL import Image
 from torch import Tensor
-
+from pathlib import Path
 from torchgeo.datasets import NonGeoDataset
 from torchgeo.datasets.errors import DatasetNotFoundError
-from torchgeo.datasets.utils import Path, check_integrity, download_and_extract_archive, extract_archive
+from torchgeo.datasets.utils import check_integrity, download_and_extract_archive, extract_archive
 
 
 class AGB_Reforest(NonGeoDataset):
@@ -65,6 +65,8 @@ class AGB_Reforest(NonGeoDataset):
     def __init__(
         self,
         root: Path = 'data',
+        img_dir: str =  'tiles',
+        metadata_path: str = "mapping/final_dataset.csv",
         transforms: Callable[[dict[str, Tensor]], dict[str, Tensor]] | None = None,
         download: bool = False,
         checksum: bool = False,
@@ -73,6 +75,10 @@ class AGB_Reforest(NonGeoDataset):
 
         Args:
             root: root directory where dataset can be found
+                Note: the tiles/patches should be inside a folder 'tiles'.
+            metadata_path: Name of the metadata csv.
+                Should be inside a folder called 'mapping' and 
+                relative path to the given root argument.
             transforms: a function/transform that takes input sample and its target as
                 entry and returns a transformed version
             download: if True, download dataset and store it in the root directory
@@ -82,15 +88,16 @@ class AGB_Reforest(NonGeoDataset):
             DatasetNotFoundError: If dataset is not found and *download* is False.
         """
         self.root = root
+        self.img_dir = img_dir
         self.transforms = transforms
         self.checksum = checksum
         self.download = download
 
         self._verify()
 
-        self.files = self._load_files(self.root)
+        self.files = self._load_files(self.root, self.img_dir)
 
-        self.annot_df = pd.read_csv(os.path.join(root, 'mapping', 'final_dataset.csv'))
+        self.annot_df = pd.read_csv(os.path.join(root, metadata_path))
 
         self.classes_grp = self.annot_df['group'].unique()
 
@@ -134,7 +141,9 @@ class AGB_Reforest(NonGeoDataset):
         return len(self.files)
 
 
-    def _load_files(self, root: Path) -> list[str]:
+    def _load_files(self, root: str,
+                    img_dir:str,
+                     globb: str = 'png') -> list[str]:
         """Return the paths of the files in the dataset.
 
         Args:
@@ -143,7 +152,11 @@ class AGB_Reforest(NonGeoDataset):
         Returns:
             list of dicts containing paths for each pair of image, annotation
         """
-        image_paths = sorted(glob.glob(os.path.join(root, 'tiles', '**', '*.png')))
+        # path object
+        path = os.path.join(root, img_dir)
+        path = Path(path)
+        # search into subdirectories
+        image_paths = sorted(list(path.rglob(f"*.{globb}")))
 
         # https://github.com/gyrrei/ReforesTree/issues/6
         bad_paths = [
