@@ -1,0 +1,32 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - index.qmd
+    - AGB_Regressor_DL_presentation.ipynb
+
+website:
+  title: "AGB from Drone Imagery"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: AGB_Regressor_DL_presentation.ipynb
+        text: Tutorial Notebook
+    right:
+      - icon: github
+        href: https://github.com/emanuel-gf/ReforesTree
+        aria-label: GitHub
+      - text: Kaggle
+        href: https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor
+
+execute:
+  freeze: true
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    smooth-scroll: true
+    fig-align: center

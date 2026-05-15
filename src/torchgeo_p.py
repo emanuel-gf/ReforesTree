@@ -1,0 +1,402 @@
+# Copyright (c) TorchGeo Contributors. All rights reserved.
+# Licensed under the MIT License.
+
+"""ReforesTree dataset."""
+
+import glob
+import os
+from collections.abc import Callable
+
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+from matplotlib.figure import Figure
+from PIL import Image
+from torch import Tensor
+from pathlib import Path
+from torchgeo.datasets import NonGeoDataset
+from torchgeo.datasets.errors import DatasetNotFoundError
+from torchgeo.datasets.utils import check_integrity, download_and_extract_archive, extract_archive
+
+
+class AGB_Reforest(NonGeoDataset):
+    """ReforesTree dataset.
+
+    The `ReforesTree <https://github.com/gyrrei/ReforesTree>`__
+    dataset contains drone imagery that can be used for tree crown detection,
+    tree species classification and Aboveground Biomass (AGB) estimation.
+
+    Dataset features:
+
+    * 100 high resolution RGB drone images at 2 cm/pixel of size 4,000 x 4,000 px
+    * more than 4,600 tree crown box annotations
+    * tree crown matched with field measurements of diameter at breast height (DBH),
+      and computed AGB and carbon values
+
+    Dataset format:
+
+    * images are three-channel pngs
+    * annotations are csv file
+
+    Dataset Classes:
+
+    0. other
+    1. banana
+    2. cacao
+    3. citrus
+    4. fruit
+    5. timber
+
+    If you use this dataset in your research, please cite the following paper:
+
+    * https://arxiv.org/abs/2201.11192
+
+    .. versionadded:: 0.3
+    """
+
+    classes = ('other', 'banana', 'cacao', 'citrus', 'fruit', 'timber')
+    url = 'https://zenodo.org/records/6813783/files/reforesTree.zip?download=1'
+
+    md5 = 'f6a4a1d8207aeaa5fbab7b21b683a302'
+    zipfilename = 'reforesTree.zip'
+
+    def __init__(
+        self,
+        root: Path = 'data',
+        img_dir: str =  'tiles',
+        metadata_path: str = "mapping/final_dataset.csv",
+        transforms: Callable[[dict[str, Tensor]], dict[str, Tensor]] | None = None,
+        download: bool = False,
+        checksum: bool = False,
+    ) -> None:
+        """Initialize a new ReforesTree dataset instance.
+
+        Args:
+            root: root directory where dataset can be found
+                Note: the tiles/patches should be inside a folder 'tiles'.
+            metadata_path: Name of the metadata csv.
+                Should be inside a folder called 'mapping' and 
+                relative path to the given root argument.
+            transforms: a function/transform that takes input sample and its target as
+                entry and returns a transformed version
+            download: if True, download dataset and store it in the root directory
+            checksum: if True, check the MD5 of the downloaded files (may be slow)
+
+        Raises:
+            DatasetNotFoundError: If dataset is not found and *download* is False.
+        """
+        self.root = root
+        self.img_dir = img_dir
+        self.transforms = transforms
+        self.checksum = checksum
+        self.download = download
+
+        self._verify()
+
+        self.files = self._load_files(self.root, self.img_dir)
+
+        self.annot_df = pd.read_csv(os.path.join(root, metadata_path))
+
+        self.classes_grp = self.annot_df['group'].unique()
+
+        self.classes_name = self.annot_df['name'].unique()
+
+        self.class2idx: dict[str, int] = {c: i for i, c in enumerate(sorted(self.classes_grp))}
+
+        self.name2idx: dict[str, int] = {
+            name: idx for idx, name in enumerate(sorted(self.classes_name))
+        }
+
+    def __getitem__(self, index: int) -> dict[str, Tensor]:
+        """Return an index within the dataset.
+
+        Args:
+            index: index to return
+
+        Returns:
+            data and label at that index
+        """
+        filepath = self.files[index]
+
+        image = self._load_image(filepath)
+
+        boxes, labels, agb, labels_name = self._load_target(filepath)
+
+        sample = {'image': image, 'bbox_xyxy': boxes, 'label': labels, 'agb': agb, 'label_name': labels_name}
+
+        if self.transforms is not None:
+            sample = self.transforms(sample)
+
+        return sample
+
+    
+    def __len__(self) -> int:
+        """Return the number of data points in the dataset.
+
+        Returns:
+            length of the dataset
+        """
+        return len(self.files)
+
+
+    def _load_files(self, root: str,
+                    img_dir:str,
+                     globb: str = 'png') -> list[str]:
+        """Return the paths of the files in the dataset.
+
+        Args:
+            root: root dir of dataset
+
+        Returns:
+            list of dicts containing paths for each pair of image, annotation
+        """
+        # path object
+        path = os.path.join(root, img_dir)
+        path = Path(path)
+        # search into subdirectories
+        image_paths = sorted(list(path.rglob(f"*.{globb}")))
+
+        # https://github.com/gyrrei/ReforesTree/issues/6
+        bad_paths = [
+            'Carlos Vera Guevara RGB_15_8425_8305_12425_12305.png',
+            'Flora Pluas RGB_3_0_11400_4000_15400.png',
+            'Flora Pluas RGB_4_0_11578_4000_15578.png',
+            'Flora Pluas RGB_23_12782_11400_16782_15400.png',
+            'Flora Pluas RGB_24_12782_11578_16782_15578.png',
+        ]
+        final_paths = []
+        for path in image_paths:
+            if os.path.basename(path) not in bad_paths:
+                final_paths.append(path)
+
+        return final_paths
+
+    def _load_image(self, path: Path) -> Tensor:
+        """Load a single image.
+
+        Args:
+            path: path to the image
+
+        Returns:
+            the image
+        """
+        with Image.open(path) as img:
+            array: np.typing.NDArray[np.uint8] = np.array(img)
+            tensor = torch.from_numpy(array).float()
+            # Convert from HxWxC to CxHxW
+            tensor = tensor.permute((2, 0, 1))
+            return tensor
+
+    def _load_target(self, filepath: Path) -> tuple[Tensor, ...]:
+        """Load boxes and labels for a single image.
+
+        Args:
+            filepath: image tile filepath
+
+        Returns:
+            dictionary containing boxes, label, and agb value
+        """
+        tile_df = self.annot_df[self.annot_df['img_path'] == os.path.basename(filepath)]
+
+        boxes = torch.Tensor(tile_df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist())
+        labels = torch.Tensor(
+            [self.class2idx[label] for label in tile_df['group'].tolist()] ## retrieves the name relative to the correct class.
+        ).long()
+        labels_name = torch.Tensor(
+            [self.name2idx[name] for name in tile_df['name'].tolist()]
+        ).long()
+        agb = torch.Tensor(tile_df['AGB'].tolist())
+
+        return boxes, labels, agb, labels_name
+
+    def _verify(self) -> None:
+        """Checks the integrity of the dataset structure."""
+        filepaths = [os.path.join(self.root, dir) for dir in ['tiles', 'mapping']]
+        if all([os.path.exists(filepath) for filepath in filepaths]):
+            return
+
+        filepath = os.path.join(self.root, self.zipfilename)
+        if os.path.isfile(filepath):
+            if self.checksum and not check_integrity(filepath, self.md5):
+                raise RuntimeError('Dataset found, but corrupted.')
+            extract_archive(filepath)
+            return
+
+        # Check if the user requested to download the dataset
+        if not self.download:
+            raise DatasetNotFoundError(self)
+
+        # else download the dataset
+        self._download()
+
+    def _download(self) -> None:
+        """Download the dataset and extract it."""
+        download_and_extract_archive(
+            self.url,
+            self.root,
+            filename=self.zipfilename,
+            md5=self.md5 if self.checksum else None,
+        )
+
+    def plot(
+        self,
+        sample: dict[str, Tensor],
+        show_titles: bool = True,
+        suptitle: str | None = None,
+    ) -> Figure:
+        """Plot a sample from the dataset.
+
+        Args:
+            sample: a sample returned by :meth:`__getitem__`
+            show_titles: flag indicating whether to show titles above each panel
+            suptitle: optional string to use as a suptitle
+
+        Returns:
+            a matplotlib Figure with the rendered sample
+        """
+        image = sample['image'].permute((1, 2, 0)).numpy()
+        ncols = 1
+        showing_predictions = 'prediction_bbox_xyxy' in sample
+        if showing_predictions:
+            ncols += 1
+
+        fig, axs = plt.subplots(ncols=ncols, figsize=(ncols * 10, 10))
+        if not showing_predictions:
+            axs = [axs]
+
+        axs[0].imshow(image)
+        axs[0].axis('off')
+
+        bboxes = [
+            patches.Rectangle(
+                (bbox[0], bbox[1]),
+                bbox[2] - bbox[0],
+                bbox[3] - bbox[1],
+                linewidth=1,
+                edgecolor='r',
+                facecolor='none',
+            )
+            for bbox in sample['bbox_xyxy'].numpy()
+        ]
+        for bbox in bboxes:
+            axs[0].add_patch(bbox)
+
+        if show_titles:
+            axs[0].set_title('Ground Truth')
+
+        if showing_predictions:
+            axs[1].imshow(image)
+            axs[1].axis('off')
+
+            pred_bboxes = [
+                patches.Rectangle(
+                    (bbox[0], bbox[1]),
+                    bbox[2] - bbox[0],
+                    bbox[3] - bbox[1],
+                    linewidth=1,
+                    edgecolor='r',
+                    facecolor='none',
+                )
+                for bbox in sample['prediction_bbox_xyxy'].numpy()
+            ]
+            for bbox in pred_bboxes:
+                axs[1].add_patch(bbox)
+
+            if show_titles:
+                axs[1].set_title('Predictions')
+
+        if suptitle is not None:
+            plt.suptitle(suptitle)
+
+        return fig
+
+    def plot2(
+            self,
+            sample: dict[str, Tensor],
+            figsize: tuple[int, int] = None,
+            show_titles: bool = True,
+            suptitle: str | None = None,
+            name_or_group: str = 'name',
+            color:str ='red',
+            ) -> Figure:
+            """Plot a sample from the dataset.
+                    Args:
+                sample: a sample returned by :meth:`__getitem__`
+                show_titles: flag indicating whether to show titles above each panel
+                suptitle: optional string to use as a suptitle
+                classes_group: optional tuple of class names to group together
+                    See at 'self.class_grp' object of the class.
+                classes_name: list of class names corresponding to labels
+                    see at 'self.class_name'.
+
+            Returns:
+                a matplotlib Figure with the rendered sample"""
+
+            ## retrieve labels
+            try:
+                match name_or_group:
+                    case 'name':
+                        labels_name = sample['label_name'].byte().numpy()
+                        classes_name= self.classes_name
+                        labels_name = np.array(classes_name)[labels_name]  ## look up class names
+                    case 'group':
+                        labels_name = sample['label'].byte().numpy()
+                        classes_group= self.classes_grp
+                        labels_name = np.array(classes_group)[labels_name]  ## look up group names
+            except KeyError:
+                raise ValueError("name_or_group must be either 'name' or 'group'")
+
+            image = sample['image'].permute((1, 2, 0)).byte().numpy()
+            has_preds = 'prediction_bbox_xyxy' in sample
+            ncols = 2 if has_preds else 1
+            
+            if figsize is None:
+                figsize = (ncols * 8, 8)
+                
+            # Use constrained_layout to prevent overlapping titles
+            fig, axs = plt.subplots(1, ncols, figsize=figsize, constrained_layout=True)
+            
+            # If there's only 1 plot, axs is not a list. This standardizes it.
+            if ncols == 1:
+                axs = [axs]
+
+            ## if grp and names are given
+            ## draw bbox and annotation label
+            def draw_boxes(ax, boxes, labels_name, color):
+                count=0
+                for i, bbox in enumerate(boxes.numpy()):
+                    # Draw Box
+                    ax.add_patch(patches.Rectangle(
+                        (bbox[0], bbox[1]), bbox[2]-bbox[0], bbox[3]-bbox[1],
+                        linewidth=2, edgecolor=color, facecolor='none'
+                    ))
+                    # Draw Label
+                    ax.text(
+                        bbox[0], bbox[1], f"{i}-{str(labels_name[i])}",
+                        color='white', fontsize=10, fontweight='bold',
+                        bbox=dict(facecolor=color, edgecolor='none', pad=1.5)
+                    )
+                    count += 1
+                print(f"Total boxes processed: {count}")
+
+            # Helper to draw on a specific axis
+            def draw_on(ax, img, boxes, title, labels_name = labels_name, color=color):
+                ax.imshow(img)
+                ax.axis('off')
+                if show_titles:
+                    ax.set_title(title)
+                draw_boxes(ax, boxes, labels_name, color)
+
+            # Plot Ground Truth
+            draw_on(axs[0], image, sample['bbox_xyxy'], 'Ground Truth')
+    
+            # Plot Predictions only if they exist
+            if has_preds:
+                draw_on(axs[1], image, sample['prediction_bbox_xyxy'], 'Predictions')
+
+            if suptitle is not None:
+                plt.suptitle(suptitle)
+
+            return fig

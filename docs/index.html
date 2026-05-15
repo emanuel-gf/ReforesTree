@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Emanuel Goulart">
+<meta name="dcterms.date" content="2026-05-16">
+
+<title>Estimating Above Ground Biomass from Drone Imagery – AGB from Drone Imagery</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-a63c84bd4c0a0bf6a27dafbcc657e5ec.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">AGB from Drone Imagery</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./AGB_Regressor_DL_presentation.html"> 
+<span class="menu-text">Tutorial Notebook</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/emanuel-gf/ReforesTree"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor"> 
+<span class="menu-text">Kaggle</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#estimating-above-ground-biomass-with-deep-learning" id="toc-estimating-above-ground-biomass-with-deep-learning" class="nav-link active" data-scroll-target="#estimating-above-ground-biomass-with-deep-learning"><span class="header-section-number">1</span> Estimating Above Ground Biomass with deep-learning</a></li>
+  <li><a href="#context---hands-on-tutorial" id="toc-context---hands-on-tutorial" class="nav-link" data-scroll-target="#context---hands-on-tutorial"><span class="header-section-number">2</span> Context - Hands On Tutorial</a>
+  <ul class="collapse">
+  <li><a href="#why-agroforestry-why-it-matters" id="toc-why-agroforestry-why-it-matters" class="nav-link" data-scroll-target="#why-agroforestry-why-it-matters"><span class="header-section-number">2.1</span> Why Agroforestry &amp; Why It Matters</a></li>
+  <li><a href="#the-economic-and-regulatory-case-for-measuring-agb" id="toc-the-economic-and-regulatory-case-for-measuring-agb" class="nav-link" data-scroll-target="#the-economic-and-regulatory-case-for-measuring-agb"><span class="header-section-number">2.2</span> The Economic and Regulatory Case for Measuring AGB</a>
+  <ul class="collapse">
+  <li><a href="#carbon-credits-and-redd" id="toc-carbon-credits-and-redd" class="nav-link" data-scroll-target="#carbon-credits-and-redd"><span class="header-section-number">2.2.1</span> Carbon Credits and REDD+</a></li>
+  <li><a href="#bank-loans-and-green-finance" id="toc-bank-loans-and-green-finance" class="nav-link" data-scroll-target="#bank-loans-and-green-finance"><span class="header-section-number">2.2.2</span> Bank Loans and Green Finance</a></li>
+  <li><a href="#restoration-carbon-credits" id="toc-restoration-carbon-credits" class="nav-link" data-scroll-target="#restoration-carbon-credits"><span class="header-section-number">2.2.3</span> Restoration Carbon Credits</a></li>
+  </ul></li>
+  <li><a href="#framework-and-tools" id="toc-framework-and-tools" class="nav-link" data-scroll-target="#framework-and-tools"><span class="header-section-number">2.3</span> Framework and Tools</a>
+  <ul class="collapse">
+  <li><a href="#torchgeo" id="toc-torchgeo" class="nav-link" data-scroll-target="#torchgeo"><span class="header-section-number">2.3.1</span> TorchGeo</a></li>
+  <li><a href="#pytorch-lightning" id="toc-pytorch-lightning" class="nav-link" data-scroll-target="#pytorch-lightning"><span class="header-section-number">2.3.2</span> PyTorch Lightning</a></li>
+  </ul></li>
+  <li><a href="#the-reforestree-dataset" id="toc-the-reforestree-dataset" class="nav-link" data-scroll-target="#the-reforestree-dataset"><span class="header-section-number">2.4</span> The ReforesTree Dataset</a>
+  <ul class="collapse">
+  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview"><span class="header-section-number">2.4.1</span> Overview</a></li>
+  <li><a href="#study-sites" id="toc-study-sites" class="nav-link" data-scroll-target="#study-sites"><span class="header-section-number">2.4.2</span> Study Sites</a></li>
+  <li><a href="#drone-data-collection" id="toc-drone-data-collection" class="nav-link" data-scroll-target="#drone-data-collection"><span class="header-section-number">2.4.3</span> Drone Data Collection</a></li>
+  <li><a href="#field-inventory" id="toc-field-inventory" class="nav-link" data-scroll-target="#field-inventory"><span class="header-section-number">2.4.4</span> Field Inventory</a></li>
+  <li><a href="#bounding-box-annotation" id="toc-bounding-box-annotation" class="nav-link" data-scroll-target="#bounding-box-annotation"><span class="header-section-number">2.4.5</span> Bounding Box Annotation</a></li>
+  </ul></li>
+  <li><a href="#deep-learning-approach" id="toc-deep-learning-approach" class="nav-link" data-scroll-target="#deep-learning-approach"><span class="header-section-number">2.5</span> Deep Learning Approach</a>
+  <ul class="collapse">
+  <li><a href="#the-resnet-family-and-transfer-learning" id="toc-the-resnet-family-and-transfer-learning" class="nav-link" data-scroll-target="#the-resnet-family-and-transfer-learning"><span class="header-section-number">2.5.1</span> The ResNet Family and Transfer Learning</a></li>
+  <li><a href="#visual-embeddings-and-latent-space" id="toc-visual-embeddings-and-latent-space" class="nav-link" data-scroll-target="#visual-embeddings-and-latent-space"><span class="header-section-number">2.5.2</span> Visual Embeddings and Latent Space</a></li>
+  <li><a href="#architecture-sparse-feature-regression" id="toc-architecture-sparse-feature-regression" class="nav-link" data-scroll-target="#architecture-sparse-feature-regression"><span class="header-section-number">2.5.3</span> Architecture: Sparse Feature Regression</a></li>
+  <li><a href="#the-global-aggregation-loss" id="toc-the-global-aggregation-loss" class="nav-link" data-scroll-target="#the-global-aggregation-loss"><span class="header-section-number">2.5.4</span> The Global Aggregation Loss</a></li>
+  <li><a href="#training-configuration" id="toc-training-configuration" class="nav-link" data-scroll-target="#training-configuration"><span class="header-section-number">2.5.5</span> Training Configuration</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">2.5.6</span> Results</a></li>
+  </ul></li>
+  <li><a href="#next-steps-and-future-directions" id="toc-next-steps-and-future-directions" class="nav-link" data-scroll-target="#next-steps-and-future-directions"><span class="header-section-number">2.6</span> Next Steps and Future Directions</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">2.7</span> References</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Estimating Above Ground Biomass from Drone Imagery</h1>
+<p class="subtitle lead">A deep learning tutorial with ResNet-18, RoI Align, and PyTorch Lightning</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Emanuel Goulart </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 16, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<hr>
+<section id="estimating-above-ground-biomass-with-deep-learning" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Estimating Above Ground Biomass with deep-learning</h1>
+<p><em>Estimating AGB of biodiverse agroforestry sites. An end-to-end guide on how to use deep-learning techniques to estimate above-ground biomass of multiple agroforestry species composing high-productive and ecological plots in Ecuador. Through this tutorial we go through a hands-on session on dataset management, computer-vision skills for object detection and bounding boxes, and feature extraction using pre-trained backbones.</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/cover.png" class="img-fluid figure-img"></p>
+<figcaption>Drone image of an agroforestry plot in Ecuador.</figcaption>
+</figure>
+</div>
+<hr>
+</section>
+<section id="context---hands-on-tutorial" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Context - Hands On Tutorial</h1>
+<p>This introduction bridges the gap of a hands-on session on how to use deep-learning techniques and state-of-art models to estimate above ground biomass (AGB) within an agroforestry plot. The code of the tutorial can be find <a href="https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor" title="Hands On tutorial">HERE</a> and the <a href="https://www.kaggle.com/datasets/emanuelgoulart/reforestree-dataset" title="dataset kaggle">dataset</a> is also full available on kaggle. This tutorial utilizes the dataset developed by Reforestree. Please look the referenced <a href="https://arxiv.org/abs/2201.11192" title="original paper">paper</a> for more information.</p>
+<section id="why-agroforestry-why-it-matters" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="why-agroforestry-why-it-matters"><span class="header-section-number">2.1</span> Why Agroforestry &amp; Why It Matters</h2>
+<p>Modern agriculture faces a fundamental tension: feeding a growing global population while reversing the ecological damage caused by decades of industrial land use. <strong>Agroforestry</strong> offers one of the most promising reconciliations of this tension.</p>
+<p>Unlike conventional monoculture systems — where a single crop is grown across vast homogeneous fields at the cost of biodiversity, soil health, and water retention — agroforestry deliberately integrates trees, shrubs, and crops within the same land unit. In the agroforestry plots of coastal Ecuador studied here, cacao grows in the shade of towering timber trees, interspersed with banana, citrus, and fruit species. The result is a system that is simultaneously:</p>
+<ul>
+<li><strong>Productive</strong>: multi-layered canopies allow year-round harvests of diverse products</li>
+<li><strong>Ecologically resilient</strong>: diverse root systems stabilize soils and regulate water cycles</li>
+<li><strong>Carbon-dense</strong>: the standing woody biomass of trees stores large amounts of carbon that would otherwise reside as CO₂ in the atmosphere</li>
+</ul>
+<p>This last point — carbon storage — is where the intersection between ecology, remote sensing, and machine learning becomes not just scientifically interesting, but economically and politically consequential.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/comparison.png" class="img-fluid figure-img"></p>
+<figcaption>Comparison of soy monoculture vs agroforestry site.</figcaption>
+</figure>
+</div>
+<hr>
+</section>
+<section id="the-economic-and-regulatory-case-for-measuring-agb" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="the-economic-and-regulatory-case-for-measuring-agb"><span class="header-section-number">2.2</span> The Economic and Regulatory Case for Measuring AGB</h2>
+<section id="carbon-credits-and-redd" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="carbon-credits-and-redd"><span class="header-section-number">2.2.1</span> Carbon Credits and REDD+</h3>
+<p>The United Nations <strong>REDD+ framework</strong> (Reducing Emissions from Deforestation and Forest Degradation) creates financial incentives for developing countries and landowners to conserve and restore forests by quantifying and certifying the carbon stored in standing trees. For a REDD+ project to generate tradeable carbon credits, it must demonstrate — with measurable, reportable, and verifiable (MRV) evidence — how much carbon is sequestered in the project area.</p>
+<p><strong>Above Ground Biomass (AGB)</strong> is the primary proxy for carbon stock: approximately 47–50% of dry biomass is carbon. Every megagram of AGB represents roughly 0.5 Mg of stored carbon, or approximately 1.83 Mg of avoided CO₂ equivalent. Without credible AGB measurements, carbon credits cannot be issued, and the entire financial incentive structure for forest conservation collapses.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>MRV and the Credibility Gap
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The credibility of a carbon credit depends entirely on the quality of its underlying measurement. Traditional field inventories — conducted by teams walking plots with diameter tapes and GPS units — are gold-standard accurate but cover only small fractions of project areas. Remote sensing combined with deep learning offers a path to <strong>wall-to-wall AGB estimation</strong> at a fraction of the cost, without sacrificing scientific rigor.</p>
+</div>
+</div>
+</section>
+<section id="bank-loans-and-green-finance" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="bank-loans-and-green-finance"><span class="header-section-number">2.2.2</span> Bank Loans and Green Finance</h3>
+<p>Beyond carbon markets, AGB measurements have direct financial implications for <strong>green lending</strong>. Development finance institutions — including the World Bank, the Inter-American Development Bank (IADB), and a growing number of commercial banks with sustainability mandates — increasingly tie loan conditions and concessional interest rates to verified ecosystem service delivery.</p>
+<p>A smallholder farmer or cooperative seeking a <strong>green loan</strong> to expand an agroforestry system may be required to demonstrate:</p>
+<ol type="1">
+<li>The current carbon stock of their land (baseline AGB)</li>
+<li>A credible projection of carbon stock growth under the proposed land management</li>
+<li>Periodic re-measurement to verify that the carbon commitment is being honored</li>
+</ol>
+<p>Remote sensing-based AGB estimation enables these verifications to be conducted rapidly, cheaply, and at scale — making green finance accessible to landowners who cannot afford repeated field campaigns. In regions like coastal Ecuador, where agroforestry cooperatives manage fragmented plots across hundreds of farms, drone-based AGB mapping could fundamentally unlock access to conservation finance.</p>
+</section>
+<section id="restoration-carbon-credits" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="restoration-carbon-credits"><span class="header-section-number">2.2.3</span> Restoration Carbon Credits</h3>
+<p>A related and rapidly growing market is <strong>restoration carbon credits</strong> — credits issued not for preserving existing forest but for actively restoring degraded land. Validation of these credits requires demonstrating that planted or regenerating trees are accumulating biomass at the rate projected in the project design document.</p>
+<p>This is precisely the use case where the ReforesTree dataset and the techniques demonstrated in this tutorial are most directly applicable: automated, repeatable, drone-based AGB estimation that can track biomass accumulation across agroforestry restoration sites year over year.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/voluntary_carbon_market.png" class="img-fluid figure-img"></p>
+<figcaption>Voluntary Carbon Market Size by Volume of Traded Carbon Credits, pre-2005 to 2024. Source: Ecosystem Marketplace.</figcaption>
+</figure>
+</div>
+<hr>
+</section>
+</section>
+<section id="framework-and-tools" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="framework-and-tools"><span class="header-section-number">2.3</span> Framework and Tools</h2>
+<p>This tutorial will utilize well-spreaded libraries using for the geospatial community. All the code can be accessed in <a href="https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor">kaggle</a> or google colab.</p>
+<section id="torchgeo" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="torchgeo"><span class="header-section-number">2.3.1</span> TorchGeo</h3>
+<p><a href="https://torchgeo.readthedocs.io/en/stable/">TorchGeo</a> is a PyTorch library specifically designed for <strong>geospatial machine learning</strong>. It bridges the gap between the geospatial data ecosystem (rasters, shapefiles, CRS-aware projections) and the PyTorch deep learning ecosystem.</p>
+<p>TorchGeo provides:</p>
+<ul>
+<li><strong>Ready-to-use dataset classes</strong> for dozens of publicly available remote sensing datasets, including a <code>ReforesTree</code> class that handles download, verification, and loading out of the box</li>
+<li><strong>Geospatial samplers</strong> for spatially aware train/val splits (avoiding data leakage from spatially autocorrelated data)</li>
+<li><strong>Transforms</strong> adapted to multi-band satellite and drone imagery (including infrared bands not present in standard RGB datasets)</li>
+</ul>
+<p>Its design philosophy is elegant: every dataset returns a dictionary of tensors with consistent keys (<code>image</code>, <code>mask</code>, <code>bbox</code>, etc.), making it easy to swap datasets without changing model code. In this tutorial we subclass <code>NonGeoDataset</code> — the appropriate base class for datasets, like our PNG tiles, that do not carry embedded coordinate reference system metadata.</p>
+</section>
+<section id="pytorch-lightning" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="pytorch-lightning"><span class="header-section-number">2.3.2</span> PyTorch Lightning</h3>
+<p><a href="https://lightning.ai/docs/pytorch/stable/">PyTorch Lightning</a> is the backbone of deep learning training for research and engineering. It separates the <strong>science</strong> (model architecture, loss function, metrics) from the <strong>engineering</strong> (GPU management, gradient accumulation, mixed precision, checkpointing, logging), letting you write cleaner code and iterate faster.</p>
+</section>
+</section>
+<section id="the-reforestree-dataset" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="the-reforestree-dataset"><span class="header-section-number">2.4</span> The ReforesTree Dataset</h2>
+<section id="overview" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="overview"><span class="header-section-number">2.4.1</span> Overview</h3>
+<p>The ReforesTree dataset pairs high-resolution drone imagery with field-measured tree-level annotations across <strong>6 agroforestry sites in coastal Ecuador</strong>. It was introduced by <a href="https://arxiv.org/search/cs?searchtype=author&amp;query=Reiersen,+G">Gyri Reiersen</a>, <a href="https://arxiv.org/search/cs?searchtype=author&amp;query=Dao,+D">David Dao</a> (2022), and is publicly available on <a href="https://zenodo.org/record/6813783">Zenodo</a> and through the TorchGeo data loader.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 66%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Attribute</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Number of agroforestry sites</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>Total image tiles</td>
+<td>100 (4,000 × 4,000 px each)</td>
+</tr>
+<tr class="odd">
+<td>Ground resolution</td>
+<td>~2 cm/pixel</td>
+</tr>
+<tr class="even">
+<td>Ground area per tile</td>
+<td>~80 × 80 metres</td>
+</tr>
+<tr class="odd">
+<td>Total annotated trees</td>
+<td>&gt; 4,600</td>
+</tr>
+<tr class="even">
+<td>Species groups</td>
+<td>6 (banana, cacao, citrus, fruit, timber, other)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="study-sites" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="study-sites"><span class="header-section-number">2.4.2</span> Study Sites</h3>
+<p>All six sites are located in the province of Los Ríos and surrounding areas of Ecuador — a region with a tropical climate and a centuries-long tradition of smallholder agroforestry, particularly centered on cacao production.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Site</th>
+<th>Primary Species</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Carlos Vera Arteaga</td>
+<td>Cacao, timber, fruit</td>
+</tr>
+<tr class="even">
+<td>Carlos Vera Guevara</td>
+<td>Cacao, banana, citrus</td>
+</tr>
+<tr class="odd">
+<td>Carlos Vera Morejón</td>
+<td>Mixed agroforestry</td>
+</tr>
+<tr class="even">
+<td>Flora Pluas</td>
+<td>Cacao, banana</td>
+</tr>
+<tr class="odd">
+<td>Nestor Lema</td>
+<td>Timber, fruit</td>
+</tr>
+<tr class="even">
+<td>Cardenal</td>
+<td>Mixed agroforestry</td>
+</tr>
+</tbody>
+</table>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/all_sites.png" class="img-fluid figure-img"></p>
+<figcaption>All 6 sites alongside the province of Los Rios, Equador. Source: ReforesTree</figcaption>
+</figure>
+</div>
+</section>
+<section id="drone-data-collection" class="level3" data-number="2.4.3">
+<h3 data-number="2.4.3" class="anchored" data-anchor-id="drone-data-collection"><span class="header-section-number">2.4.3</span> Drone Data Collection</h3>
+<p>Each site was surveyed using a <strong>DJI Phantom 4 Pro</strong> UAV following a pre-planned grid flight path at low altitude. The resulting photographs were processed with photogrammetry to produce georeferenced orthomosaics.</p>
+<p>At ~2 cm/pixel, the drone imagery is fine enough to resolve individual tree crowns, canopy gaps, and inter-species textural differences. This resolution is the enabler: it is what makes the visual features extracted by a deep learning backbone informative enough to predict biomass.</p>
+<p>For computational tractability, the orthomosaics were tiled into <strong>4,000 × 4,000 pixel PNG patches</strong>, each representing approximately 80 × 80 metres of ground surface.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/ksnip_20260515-231530.png" class="img-fluid figure-img"></p>
+<figcaption>Aerial view of a agroforestry plot.</figcaption>
+</figure>
+</div>
+</section>
+<section id="field-inventory" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="field-inventory"><span class="header-section-number">2.4.4</span> Field Inventory</h3>
+<p>The drone survey was complemented by a comprehensive <strong>tree-by-tree field inventory</strong>. Field teams visited each site and, for every tree within the survey boundary, recorded:</p>
+<ul>
+<li><strong>Species identity</strong> (both fine-grained species name and coarse group)</li>
+<li><strong>Diameter at Breast Height (DBH)</strong> — measured with a diameter tape at exactly 1.3 m height above ground</li>
+<li><strong>GPS coordinates</strong> — recorded at the base of each tree with a handheld device</li>
+</ul>
+<p>Each drone imagery patch contains these field and hand-measured tree parameters — breast height measurements and species identification — which led to the calculation of biomass based on aspects and species-related equations derived from <strong>dendrology study</strong>. Thus, this dataset contains, for each tree described within the inventory, an estimation of above ground biomass.</p>
+<p>The allometric conversion follows species-specific equations. A widely-used form is:</p>
+<p><span class="math display">\[\text{AGB} = 0.0673 \times (\rho \cdot D^2 \cdot H)^{0.976}\]</span></p>
+<p>where <span class="math inline">\(\rho\)</span> is species wood density (g/cm³), <span class="math inline">\(D\)</span> is DBH (cm), and <span class="math inline">\(H\)</span> is tree height (m). The final AGB values, stored in <code>mapping/final_dataset.csv</code>, are expressed in <strong>kilograms per tree</strong>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>AGB Distribution
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The AGB values in this dataset are right-skewed: most trees are young cacao or banana plants with AGB below 50 kg, while a minority of mature timber trees can exceed 500 kg. For model training, AGB is z-score normalized (<span class="math inline">\(\mu \approx 13\)</span> kg, <span class="math inline">\(\sigma \approx 54.5\)</span> kg) to stabilize gradients.</p>
+</div>
+</div>
+</section>
+<section id="bounding-box-annotation" class="level3" data-number="2.4.5">
+<h3 data-number="2.4.5" class="anchored" data-anchor-id="bounding-box-annotation"><span class="header-section-number">2.4.5</span> Bounding Box Annotation</h3>
+<p>To locate each inventoried tree within the drone imagery, <strong>bounding boxes</strong> were generated using <a href="https://deepforest.readthedocs.io/en/stable/">DeepForest</a> — a convolutional neural network pre-trained for tree crown detection in aerial imagery. These automatically generated proposals were then <strong>manually reviewed and cleaned</strong> by the dataset authors.</p>
+<p>Each bounding box was matched to a field measurement record using <strong>GPS proximity</strong>: the box is assigned to the field-measured tree whose recorded GPS coordinate falls closest to the box centroid. This matching is the main source of label uncertainty in the dataset — GPS receivers in a forest canopy environment can be off by several metres, and not every visible crown has a corresponding field record.</p>
+<p>The final annotation CSV contains one row per matched tree, linking: <code>img_path</code> → <code>bbox [xmin, ymin, xmax, ymax]</code> → <code>species name</code> → <code>group</code> → <code>AGB (kg)</code></p>
+<hr>
+</section>
+</section>
+<section id="deep-learning-approach" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="deep-learning-approach"><span class="header-section-number">2.5</span> Deep Learning Approach</h2>
+<section id="the-resnet-family-and-transfer-learning" class="level3" data-number="2.5.1">
+<h3 data-number="2.5.1" class="anchored" data-anchor-id="the-resnet-family-and-transfer-learning"><span class="header-section-number">2.5.1</span> The ResNet Family and Transfer Learning</h3>
+<p>Our feature extractor is <strong>ResNet-18</strong>, a member of the Residual Network (ResNet) family introduced by <span class="citation" data-cites="he2016deep">@he2016deep</span>. ResNet models solved a fundamental problem in deep learning: as networks grew deeper to learn more abstract representations, they became increasingly difficult to train due to vanishing gradients. The solution was the <strong>residual (skip) connection</strong> — a shortcut path that adds the input of a block directly to its output, allowing gradients to flow through the network without degradation.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/resnetblock.png" class="img-fluid figure-img"></p>
+<figcaption>ResNet block diagram.</figcaption>
+</figure>
+</div>
+<p>The ResNet family comes in several depth variants:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th>Parameters</th>
+<th>ImageNet Top-1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ResNet-18</td>
+<td>11.7 M</td>
+<td>69.8%</td>
+</tr>
+<tr class="even">
+<td>ResNet-34</td>
+<td>21.8 M</td>
+<td>73.3%</td>
+</tr>
+<tr class="odd">
+<td>ResNet-50</td>
+<td>25.6 M</td>
+<td>76.1%</td>
+</tr>
+<tr class="even">
+<td>ResNet-101</td>
+<td>44.5 M</td>
+<td>77.4%</td>
+</tr>
+</tbody>
+</table>
+<p>For this task we use <strong>ResNet-18</strong> — the lightest member of the family. With a frozen backbone (no fine-tuning), the parameter count that actually trains is just the MLP head (~6.6 M parameters), which converges quickly even on a small dataset. The backbone is loaded with weights pretrained on <strong>ImageNet-1k</strong> via <code>timm</code>, a large collection of pretrained vision models.</p>
+</section>
+<section id="visual-embeddings-and-latent-space" class="level3" data-number="2.5.2">
+<h3 data-number="2.5.2" class="anchored" data-anchor-id="visual-embeddings-and-latent-space"><span class="header-section-number">2.5.2</span> Visual Embeddings and Latent Space</h3>
+<p>A pretrained convolutional network is not just a classifier — it is also a <strong>feature extractor</strong>. As an image passes through successive convolutional layers, it is progressively transformed from raw pixel values into increasingly abstract and semantically rich representations.</p>
+<p>The output of the final convolutional block — before the classification head — is a tensor of shape <code>[512, H', W']</code> where each of the 512 channels activates in response to a different learned visual pattern. This tensor is often called the <strong>feature map</strong>, and the 512-dimensional vector at each spatial location is called a <strong>visual embedding</strong> or <strong>latent representation</strong>.</p>
+<p>These embeddings live in a high-dimensional <strong>latent space</strong> where semantically similar regions cluster together: two cacao crowns with similar size and texture will produce similar embeddings, regardless of where they appear in the image or which site they come from.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/feature_space.png" class="img-fluid figure-img"></p>
+<figcaption>Feature Map visualization of the agroflorestry site.</figcaption>
+</figure>
+</div>
+<p>For the AGB regression task, we want to map each tree’s visual embedding, which encodes crown size, texture, color, and shadow, to a biomass value. This is the role of the MLP regression head.</p>
+</section>
+<section id="architecture-sparse-feature-regression" class="level3" data-number="2.5.3">
+<h3 data-number="2.5.3" class="anchored" data-anchor-id="architecture-sparse-feature-regression"><span class="header-section-number">2.5.3</span> Architecture: Sparse Feature Regression</h3>
+<p>The central engineering challenge is that our input images are <strong>4,000 × 4,000 pixels</strong> — far larger than the 224 × 224 pixels ResNet was designed for. Three naive approaches fail:</p>
+<ul>
+<li><strong>Resize to 224 × 224</strong>: destroys resolution; trees become sub-pixel</li>
+<li><strong>Uniform tiling</strong>: processes ~256 patches per image, most containing only bare soil</li>
+<li><strong>Full-image pass</strong>: requires ~12 GB VRAM — exceeds most single-GPU budgets</li>
+</ul>
+<p>The solution is a <strong>Sparse Moving Window</strong> strategy:</p>
+<blockquote class="blockquote">
+<p>Only the 1,000 × 1,000 pixel patches that contain at least one labeled bounding box are forwarded through the backbone. Feature maps from processed patches are assembled into a full-image canvas (zero-filled elsewhere), and RoI Align then extracts per-tree features from this sparse representation.</p>
+</blockquote>
+<p><img src="utils/illustrations/img_architecture.png" class="img-fluid"></p>
+<p>The complete forward pass has five stages:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Stage</th>
+<th>Operation</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Input</td>
+<td>Drone tile</td>
+<td><code>[3, 4000, 4000]</code></td>
+</tr>
+<tr class="even">
+<td>Patch selection</td>
+<td>Identify bbox-containing windows</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>ResNet-18 backbone</td>
+<td>Per-patch feature extraction</td>
+<td><code>[512, 31, 31]</code> per patch</td>
+</tr>
+<tr class="even">
+<td>Canvas assembly</td>
+<td>Sparse full-image feature map</td>
+<td><code>[512, 125, 125]</code></td>
+</tr>
+<tr class="odd">
+<td>RoI Align</td>
+<td>Per-tree 7×7 feature grid</td>
+<td><code>[N, 512, 7, 7]</code></td>
+</tr>
+<tr class="even">
+<td>MLP head</td>
+<td>Biomass regression</td>
+<td><code>[N, 1]</code></td>
+</tr>
+<tr class="odd">
+<td>Aggregation</td>
+<td>Tile-level sum</td>
+<td><code>[1]</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>RoI Align</strong> (<span class="citation" data-cites="he2017mask">@he2017mask</span>) deserves particular attention. It maps each bounding box (defined in pixel coordinates) to the feature map (at 1/32 resolution) and extracts a fixed 7 × 7 feature grid using bilinear interpolation. This normalizes the representation across tree crowns of very different physical sizes — a critical property for a dataset spanning cacao seedlings and mature timber trees.</p>
+</section>
+<section id="the-global-aggregation-loss" class="level3" data-number="2.5.4">
+<h3 data-number="2.5.4" class="anchored" data-anchor-id="the-global-aggregation-loss"><span class="header-section-number">2.5.4</span> The Global Aggregation Loss</h3>
+<p>Rather than computing a per-tree MSE between each individual prediction <span class="math inline">\(\hat{y}_i\)</span> and its ground-truth label <span class="math inline">\(y_i\)</span>, the training objective is:</p>
+<p><span class="math display">\[\mathcal{L} = \text{MSE}\!\left(\sum_{i \in \mathcal{V}} \hat{y}_i,\;\sum_{i \in \mathcal{V}} y_i\right)\]</span></p>
+<p>where <span class="math inline">\(\mathcal{V}\)</span> is the set of trees whose patches were processed in a given forward pass. This is a deliberate design choice:</p>
+<ul>
+<li><strong>Individual labels carry GPS uncertainty</strong>: the bounding box matched to a field record may belong to a neighboring tree in the image</li>
+<li><strong>Area-wide sums are more robust</strong>: individual errors cancel out when aggregated, producing a more stable training signal</li>
+<li><strong>Ecological relevance</strong>: carbon accounting is done at plot or site level, not per individual tree</li>
+</ul>
+</section>
+<section id="training-configuration" class="level3" data-number="2.5.5">
+<h3 data-number="2.5.5" class="anchored" data-anchor-id="training-configuration"><span class="header-section-number">2.5.5</span> Training Configuration</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Value</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Backbone</td>
+<td>ResNet-18 (frozen)</td>
+<td>Small dataset; pretrained features sufficient</td>
+</tr>
+<tr class="even">
+<td>Optimizer</td>
+<td>Adam</td>
+<td>Adaptive learning rate</td>
+</tr>
+<tr class="odd">
+<td>Learning rate</td>
+<td>1e-4</td>
+<td>Standard for regression heads</td>
+</tr>
+<tr class="even">
+<td>Batch size</td>
+<td>1</td>
+<td>Memory constraint (one 4K×4K tile ≈ 180 MB)</td>
+</tr>
+<tr class="odd">
+<td>Gradient accumulation</td>
+<td>4</td>
+<td>Effective batch size = 4</td>
+</tr>
+<tr class="even">
+<td>Epochs</td>
+<td>18</td>
+<td>Convergence plateau observed ~epoch 12</td>
+</tr>
+<tr class="odd">
+<td>Precision</td>
+<td>16-mixed (AMP)</td>
+<td>~2× throughput on modern GPUs</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="results" class="level3" data-number="2.5.6">
+<h3 data-number="2.5.6" class="anchored" data-anchor-id="results"><span class="header-section-number">2.5.6</span> Results</h3>
+<p>Training converges steadily over 18 epochs with the validation loss closely tracking training loss, indicating the model generalizes across sites rather than memorizing a single agroforestry structure.</p>
+<p>[IMAGE HERE — training and validation loss curves from WandB]</p>
+<p>The best checkpoint achieves <code>val_loss ≈ 4.39</code> on normalized MSE. Converting to physical units:</p>
+<p><span class="math display">\[\text{RMSE}_{\text{raw}} = \sqrt{4.39} \times 54.5 \;\text{kg} \approx 114 \;\text{kg per tile}\]</span></p>
+<p>For context, a typical tile contains 20–60 labeled trees with a total AGB sum in the range of 500–3,000 kg. A tile-level RMSE of ~114 kg represents relative errors on the order of 5–20%, which is competitive with the inherent GPS-matching uncertainty in the ground truth labels.</p>
+<p>[IMAGE HERE — per-tree prediction visualization: ground truth (green) vs.&nbsp;predictions (red) on a test tile]</p>
+<hr>
+</section>
+</section>
+<section id="next-steps-and-future-directions" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="next-steps-and-future-directions"><span class="header-section-number">2.6</span> Next Steps and Future Directions</h2>
+<p>This <a href="https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor#Feature-Space---Plot">tutorial</a> demonstrates that a frozen pretrained backbone combined with a lightweight MLP head can produce meaningful AGB estimates from drone imagery — without any fine-tuning of the CNN weights. Several directions could push this further:</p>
+<p><strong>Backbone fine-tuning</strong> Unfreeze the later ResNet layers after an initial warm-up phase. With a low learning rate and careful regularization (e.g., layer-wise learning rate decay), fine-tuning the convolutional features on drone imagery could capture domain-specific textures not present in ImageNet.</p>
+<p><strong>Backbone scaling</strong> Replace ResNet-18 with a larger member of the family (ResNet-50, ResNet-101) or a Vision Transformer (ViT). Larger models produce richer embeddings at the cost of higher VRAM requirements — manageable with the sparse window strategy already in place.</p>
+<p><strong>Multi-spectral input</strong> Drone surveys increasingly include near-infrared (NIR) bands alongside RGB. The Normalized Difference Vegetation Index (NDVI = (NIR − Red) / (NIR + Red)) is a strong proxy for canopy health and correlates with biomass. Adding NIR as a fourth input channel (with corresponding adjustments to the first convolutional layer) is a natural extension.</p>
+<p><strong>Per-tree loss with uncertainty weighting</strong> Replace the global sum loss with a per-tree Huber loss, weighting each tree’s contribution by an uncertainty estimate derived from GPS accuracy metadata. This would allow the model to focus learning on high-confidence annotations.</p>
+<p><strong>Spatial cross-validation</strong> The current random 70/15/15 split ignores spatial autocorrelation — tiles from the same site end up in both train and test. A site-level leave-one-out evaluation would give a more honest estimate of generalization to new farms and geographies.</p>
+<p><strong>Temporal monitoring</strong> The most impactful real-world application is <strong>repeated biomass mapping over time</strong>. Flying the same sites annually and running the pipeline each time would produce biomass change maps suitable for carbon credit verification and green loan reporting.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Get started
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The full tutorial notebook is available on Kaggle. You can fork it, add the ReforesTree dataset, and run the entire pipeline end-to-end on a free T4 GPU in under 2 hours.</p>
+<p>→ <a href="./AGB_Regressor_DL_presentation.html"><strong>View Tutorial Notebook</strong></a> &nbsp;|&nbsp; <a href="https://www.kaggle.com/code/emanuelgoulart/abg-dl-regressor"><strong>Open in Kaggle</strong></a> &nbsp;|&nbsp; <a href="https://github.com/emanuel-gf/ReforesTree"><strong>GitHub Repository</strong></a></p>
+</div>
+</div>
+<hr>
+</section>
+<section id="references" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="references"><span class="header-section-number">2.7</span> References</h2>
+<div id="refs" role="list">
+<p>Reiersen, Gyri, David Dao, Björn Lütjens, Konstantin Klemmer, Kenza Amara, Attila Steinegger, Ce Zhang, and Xiaoxiang Zhu. 2024. “ReforesTree: A Dataset for Estimating Tropical Forest Carbon Stock with Deep Learning and Aerial Imagery.” arXiv. <a href="https://doi.org/10.48550/arXiv.2201.11192" class="uri">https://doi.org/10.48550/arXiv.2201.11192</a></p>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // default icon
+            link.classList.add("external");
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

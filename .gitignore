@@ -1,0 +1,5 @@
+dataset/
+new_data/
+*__pycache__
+/.quarto/
+**/*.quarto_ipynb
