@@ -4,6 +4,8 @@ project:
   render:
     - index.qmd
     - AGB_Regressor_DL_presentation.ipynb
+  resources:
+    - .nojekyll
 
 website:
   title: "AGB from Drone Imagery"
