@@ -2,7 +2,7 @@
 title: "Estimating Above Ground Biomass from Drone Imagery"
 subtitle: "A deep learning tutorial with ResNet-18, RoI Align, and PyTorch Lightning"
 author: "Emanuel Goulart"
-date: today
+date: 2026-02-20
 format:
   html:
     theme: cosmo
@@ -109,7 +109,7 @@ Its design philosophy is elegant: every dataset returns a dictionary of tensors 
 The ReforesTree dataset pairs high-resolution drone imagery with field-measured tree-level annotations across **6 agroforestry sites in coastal Ecuador**. It was introduced by [Gyri Reiersen](https://arxiv.org/search/cs?searchtype=author&query=Reiersen,+G), [David Dao](https://arxiv.org/search/cs?searchtype=author&query=Dao,+D) (2022), and is publicly available on [Zenodo](https://zenodo.org/record/6813783) and through the TorchGeo data loader.
 
 | Attribute | Value |
-|------------------------|------------------------------------------------|
+|------------------------|-----------------------------------------------|
 | Number of agroforestry sites | 6 |
 | Total image tiles | 100 (4,000 × 4,000 px each) |
 | Ground resolution | \~2 cm/pixel |
@@ -261,7 +261,7 @@ where $\mathcal{V}$ is the set of trees whose patches were processed in a given 
 
 Training converges steadily over 18 epochs with the validation loss closely tracking training loss, indicating the model generalizes across sites rather than memorizing a single agroforestry structure.
 
-\[IMAGE HERE — training and validation loss curves from WandB\]
+![Training and Validation loss. Source: Author.](utils/illustrations/traning_val_loss.png)
 
 The best checkpoint achieves `val_loss ≈ 4.39` on normalized MSE. Converting to physical units:
 
@@ -269,7 +269,7 @@ $$\text{RMSE}_{\text{raw}} = \sqrt{4.39} \times 54.5 \;\text{kg} \approx 114 \;\
 
 For context, a typical tile contains 20–60 labeled trees with a total AGB sum in the range of 500–3,000 kg. A tile-level RMSE of \~114 kg represents relative errors on the order of 5–20%, which is competitive with the inherent GPS-matching uncertainty in the ground truth labels.
 
-\[IMAGE HERE — per-tree prediction visualization: ground truth (green) vs. predictions (red) on a test tile\]
+![Results of the ABG regression for the given tile image. We can note that singular results regarding the bounding box are not extremly accurate but the sum of biomass regarding the full tile has a good precision with some level of uncertainty.](utils/illustrations/results_abg_regression.png)
 
 ------------------------------------------------------------------------
 

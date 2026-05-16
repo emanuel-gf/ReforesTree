@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Emanuel Goulart">
-<meta name="dcterms.date" content="2026-05-16">
+<meta name="dcterms.date" content="2026-02-20">
 
 <title>Estimating Above Ground Biomass from Drone Imagery – AGB from Drone Imagery</title>
 <style>
@@ -238,7 +238,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 16, 2026</p>
+      <p class="date">February 20, 2026</p>
     </div>
   </div>
   
@@ -673,11 +673,21 @@ window.Quarto = {
 <section id="results" class="level3" data-number="2.5.6">
 <h3 data-number="2.5.6" class="anchored" data-anchor-id="results"><span class="header-section-number">2.5.6</span> Results</h3>
 <p>Training converges steadily over 18 epochs with the validation loss closely tracking training loss, indicating the model generalizes across sites rather than memorizing a single agroforestry structure.</p>
-<p>[IMAGE HERE — training and validation loss curves from WandB]</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/traning_val_loss.png" class="img-fluid figure-img"></p>
+<figcaption>Training and Validation loss. Source: Author.</figcaption>
+</figure>
+</div>
 <p>The best checkpoint achieves <code>val_loss ≈ 4.39</code> on normalized MSE. Converting to physical units:</p>
 <p><span class="math display">\[\text{RMSE}_{\text{raw}} = \sqrt{4.39} \times 54.5 \;\text{kg} \approx 114 \;\text{kg per tile}\]</span></p>
 <p>For context, a typical tile contains 20–60 labeled trees with a total AGB sum in the range of 500–3,000 kg. A tile-level RMSE of ~114 kg represents relative errors on the order of 5–20%, which is competitive with the inherent GPS-matching uncertainty in the ground truth labels.</p>
-<p>[IMAGE HERE — per-tree prediction visualization: ground truth (green) vs.&nbsp;predictions (red) on a test tile]</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="utils/illustrations/results_abg_regression.png" class="img-fluid figure-img"></p>
+<figcaption>Results of the ABG regression for the given tile image. We can note that singular results regarding the bounding box are not extremly accurate but the sum of biomass regarding the full tile has a good precision with some level of uncertainty.</figcaption>
+</figure>
+</div>
 <hr>
 </section>
 </section>
